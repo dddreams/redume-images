@@ -1,26 +1,25 @@
-package util;
-import java.awt.Image;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileOutputStream;
-
-import javax.imageio.ImageIO;
+package utils;
 
 import com.sun.image.codec.jpeg.JPEGCodec;
 import com.sun.image.codec.jpeg.JPEGImageEncoder;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileOutputStream;
 
 
 public class ReduceImg {
 
 	public static void main(String[] args) {
-		String filePath = "E:\\images";
+		String filePath = "E://images";
 	    getFiles(filePath);
 	}
 
 	/*
 	 * 通过递归得到某一路径下所有的目录及其文件
 	 */
-	static void getFiles(String filePath) {
+	private static void getFiles(String filePath) {
 		try {
 			File root = new File(filePath);
 			File[] files = root.listFiles();
@@ -32,9 +31,20 @@ public class ReduceImg {
 					getFiles(file.getAbsolutePath());
 				} else {
 					// 如果是文件进行处理
-					String fileName = file.getName();
-					if(fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")|| fileName.endsWith(".png") || fileName.endsWith(".gif")){
-						reduceImage(file);
+					String fileName = file.getName().toLowerCase();
+					if(file.length() > 0 && (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")|| fileName.endsWith(".png") || fileName.endsWith(".gif"))){
+						// 读取文件
+						BufferedImage image = ReaderImages.readerImages(file);
+						// 文件后缀名
+						String formatName = fileName.substring(fileName.lastIndexOf('.') + 1, fileName.length());
+						// 文件输出路径
+						String outPath = file.getParent() + "\\" + fileName.substring(0, fileName.lastIndexOf('.')) + "_min." + formatName;
+						// 压缩
+						if(image != null){
+							reduceImage(image, outPath);
+						}else {
+							System.out.println("文件格式不正确！");
+						}
 					}
 				}
 			}
@@ -42,12 +52,15 @@ public class ReduceImg {
 			e.printStackTrace();
 		}
 	}
-	
-	public static void reduceImage(File file) throws Exception{
-		Image img = ImageIO.read(file);
-//		int newWidth = (int) img.getWidth(null);
-//		int newHeight = (int) img.getHeight(null);
-		
+
+	/**
+	 * 对图片进行等比例压缩
+	 * @param img 图片文件
+	 * @param outPath 图片输出路径
+	 * @throws Exception
+	 */
+	public static void reduceImage(BufferedImage img, String outPath) throws Exception{
+
 		int outputWidth = 800;
 		int outputHeight = 600;
 		// 为等比缩放计算输出的图片宽度及高度
@@ -57,10 +70,10 @@ public class ReduceImg {
 		double rate = rate1 > rate2 ? rate1 : rate2;
 		int newWidth = (int) (((double) img.getWidth(null)) / rate);
 		int newHeight = (int) (((double) img.getHeight(null)) / rate);
-		
-		String outPath = file.getParent()+ "\\" + file.getName().substring(0, file.getName().indexOf(".")) + "_min"+file.getName().substring(file.getName().indexOf("."), file.getName().length());
+
+
 		BufferedImage tag = new BufferedImage(newWidth,newHeight, BufferedImage.TYPE_INT_RGB);
-		tag.getGraphics().drawImage(img.getScaledInstance(newWidth, newHeight,Image.SCALE_SMOOTH), 0, 0, null);
+		tag.getGraphics().drawImage(img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH), 0, 0, null);
 		FileOutputStream out = new FileOutputStream(outPath);
 		JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(out);
 		encoder.encode(tag);
